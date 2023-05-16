@@ -3,14 +3,14 @@ pragma solidity ^0.8.9;
 
 contract CarMarketplace {
     address public contractOwner; // address of contract deployer/owner
-    uint256 public carCount; //  number of files uploaded to the marketplace.
+    uint256 public carCount; //  number of cars uploaded to the marketplace.
     bool private reentrancyLock = false; // lock to track if the buy function is currently executing
 
     struct Car {
         uint256 carId; // unique identifier of the car.
         string name; // name of the car.
         string description; // description of the car.
-        string link; // description of the car.
+        string link; // link of the car.
         uint256 price; // the price of the car in Wei.
         bool isForSale; // check that car for sale or not
         bool isSold; // check that car for sale or not
@@ -18,14 +18,14 @@ contract CarMarketplace {
         address[] oldOwner; // address of the user who are the old owners of the car.
     }
 
-    mapping(uint256 => Car) public cars; //  a mapping of file IDs to File structs
+    mapping(uint256 => Car) public cars; //  a mapping of car IDs to car structs
 
     // ===========================================
     // Modifier
     // ===========================================
 
     /**
-     * @dev Throws if called by any account other than the file owner.
+     * @dev Throws if called by any account other than the car owner.
      */
     modifier onlyCarOwner(uint256 _carId) {
         require(
@@ -36,7 +36,7 @@ contract CarMarketplace {
     }
 
     /**
-     * @dev Throws if fileId is invalid
+     * @dev Throws if carId is invalid
      */
     modifier validCarId(uint256 _carId) {
         require(_carId > 0 && _carId <= carCount, "Invalid car ID.");
@@ -85,23 +85,17 @@ contract CarMarketplace {
         return true;
     }
 
-    function setCarForSale(uint256 _carId)
-        public
-        onlyCarOwner(_carId)
-        validCarId(_carId)
-        returns (bool)
-    {
+    function setCarForSale(
+        uint256 _carId
+    ) public onlyCarOwner(_carId) validCarId(_carId) returns (bool) {
         require(!cars[_carId].isForSale, "Car is already for sale");
         cars[_carId].isForSale = true;
         return true;
     }
 
-    function removeCarFromSale(uint256 _carId)
-        public
-        onlyCarOwner(_carId)
-        validCarId(_carId)
-        returns (bool)
-    {
+    function removeCarFromSale(
+        uint256 _carId
+    ) public onlyCarOwner(_carId) validCarId(_carId) returns (bool) {
         require(cars[_carId].isForSale, "Car is not for sale already");
         cars[_carId].isForSale = false;
         return true;
@@ -127,12 +121,9 @@ contract CarMarketplace {
         return true;
     }
 
-    function buyCar(uint256 _carId)
-        public
-        payable
-        validCarId(_carId)
-        returns (bool)
-    {
+    function buyCar(
+        uint256 _carId
+    ) public payable validCarId(_carId) returns (bool) {
         // Prevent reentrancy attacksa
         require(!reentrancyLock, "Reentrant call");
         reentrancyLock = true;
@@ -141,14 +132,12 @@ contract CarMarketplace {
 
         address payable seller = payable(cars[_carId].owner);
 
-
-
-    // Push the seller's address to the first index of the oldOwner array
-    cars[_carId].oldOwner.push(cars[_carId].owner);
-    for (uint256 i = cars[_carId].oldOwner.length - 1; i > 0; i--) {
-        cars[_carId].oldOwner[i] = cars[_carId].oldOwner[i - 1];
-    }
-    cars[_carId].oldOwner[0] = seller;
+        // Push the seller's address to the first index of the oldOwner array
+        cars[_carId].oldOwner.push(cars[_carId].owner);
+        for (uint256 i = cars[_carId].oldOwner.length - 1; i > 0; i--) {
+            cars[_carId].oldOwner[i] = cars[_carId].oldOwner[i - 1];
+        }
+        cars[_carId].oldOwner[0] = seller;
 
         cars[_carId].owner = msg.sender;
         cars[_carId].isForSale = false;
